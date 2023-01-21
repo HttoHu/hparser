@@ -1,3 +1,7 @@
+/*
+ *   By Htto 2023
+ */
+
 #pragma once
 #include <vector>
 #include <map>
@@ -33,6 +37,13 @@ namespace HParser
         }
         void print();
 
+        void calc_nullable();
+
+        void calc_first();
+        // calculate first-set ,follow-set nullable-set
+        void calc_basic_values();
+
+    public:
     public:
         std::vector<Symbol *> prods_left;
         std::vector<Production> prods;
@@ -50,12 +61,14 @@ namespace HParser
         void push_production(int id) { prods.push_back(id); }
         const std::vector<int> &get_prods() { return prods; }
 
-        std::vector<Symbol *> first() const;
-        std::vector<Symbol *> follow() const;
+
+        std::set<Symbol *> follows;
+        std::set<Symbol *> firsts;
 
     private:
         Context *context;
         bool is_ter;
+
         std::vector<int> prods;
     };
 }

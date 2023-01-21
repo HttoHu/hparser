@@ -1,6 +1,7 @@
-[EXPR]:[TERM]<PLUS>[EXPR]
-    | [TERM] <MINUS>[EXPR]
-    | [TERM]
-    |
+[A]: <b>
+    |[F]
     ;
-
+[F]:<a>
+    |[A]
+    ;
+[B]: <b> | ;
