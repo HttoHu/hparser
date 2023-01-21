@@ -1,0 +1,6 @@
+[EXPR]:[TERM]<PLUS>[EXPR]
+    | [TERM] <MINUS>[EXPR]
+    | [TERM]
+    |
+    ;
+

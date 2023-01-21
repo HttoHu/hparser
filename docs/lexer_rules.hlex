@@ -1,0 +1,11 @@
+[ignore]{
+    space
+}
+
+nterminal:\[[A-Za-z0-9]+\]$
+terminal:<[a-z0-9A-Z]+>$
+or :\|$
+semi:;$
+colon::$
+space: \s|\t $
+newline :\n|\r\n$
