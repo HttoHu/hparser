@@ -3,6 +3,17 @@
 
 namespace HParser
 {
+    namespace
+    {
+        template <typename T>
+        // return if s1 changed.
+        bool merge_set(std::set<T> &s1, const std::set<T> &s2)
+        {
+            int old_sz = s1.size();
+            s1.insert(s2.begin(), s2.end());
+            return s1.size() != old_sz;
+        }
+    }
     Context::Context(HLex::Scanner scanner)
     {
         while (!scanner.is_end())
@@ -84,7 +95,7 @@ namespace HParser
             {
                 auto production = it->second;
                 auto symbol = it->first;
-                if (nullable.count(symbol))
+                if (null_tab.count(symbol))
                 {
                     it = L.erase(it);
                     continue;
@@ -99,7 +110,7 @@ namespace HParser
                         is_ter = true;
                         break;
                     }
-                    else if (!nullable.count(item))
+                    else if (!null_tab.count(item))
                     {
                         enable_null = false;
                         break;
@@ -109,7 +120,7 @@ namespace HParser
                     continue;
                 if (enable_null)
                 {
-                    nullable.insert(symbol);
+                    null_tab.insert(symbol);
                     changed = true;
                 }
                 it++;
@@ -165,23 +176,70 @@ namespace HParser
                         symbol->firsts.insert(item->firsts.begin(), item->firsts.end());
                         changed |= symbol->firsts.size() != tp;
                     }
-                    if (!nullable.count(item))
+                    if (!null_tab.count(item))
                         break;
                 }
                 if (enable_to_delete)
                     it = L.erase(it), symb_cnt_tab[symbol]--;
-                else 
+                else
                     it++;
             }
         }
     }
-    
-    void Context::calc_follow(){
-        
+
+    void Context::calc_follow()
+    {
+        std::list<std::pair<Symbol *, Production *>> L;
+
+        std::map<Symbol *, int> symb_cnt_tab;
+
+        for (int i = 0; i < prods.size(); i++)
+        {
+            L.push_back({prods_left[i], &prods[i]});
+            symb_cnt_tab[prods_left[i]]++;
+        }
+
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            // iterate every production
+            for (auto it = L.begin(); it != L.end();)
+            {
+                auto symbol = it->first;
+                auto production = it->second;
+                bool enable_delete = true;
+                std::set<Symbol *> work_set = symbol->follows;
+
+                // iterate production from a[n] to a[1]
+                for (int i = production->expr.size() - 1; i >= 0; i--)
+                {
+                    auto item = production->expr[i];
+                    if (item->is_terminal())
+                        work_set = {item};
+                    else
+                    {
+                        changed |= merge_set(item->follows, work_set);
+                        enable_delete &= (symb_cnt_tab[item] == 0);
+
+                        if (!null_tab.count(item))
+                            work_set = item->firsts;
+                        else
+                            merge_set(work_set, item->firsts);
+                    }
+                }
+                // if (enable_delete)
+                //     it = L.erase(it);
+                // else
+                    it++;
+            }
+        }
     }
-    
+
     void Context::calc_basic_values()
     {
         calc_nullable();
+        calc_first();
+        calc_follow();
     }
 }

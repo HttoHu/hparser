@@ -55,7 +55,7 @@ namespace HLex
         }
         void print()
         {
-            for (int line_no = 1; auto tok : data)
+            for (auto tok : data)
             {
                 if (tok.tag == "newline")
                     std::cout << "\n";

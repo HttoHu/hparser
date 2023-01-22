@@ -6,13 +6,14 @@ OBJ= $(addprefix obj/,$(patsubst %.cpp,%.o,$(notdir $(SRC))))
 BIN= ./bin/hparser
 
 define COM_INS 
-@echo "\033[31m 正在编译$@ \033[0m"
+@echo "\033[31m compiling... $@ \033[0m"
 @$(cc) -g -c $< -o $@
 endef
 
 # Dependencies
 scanner_dep = scanner.h
 production_dep = scanner.h production.h
+ll_parser_dep = production.h ast_node.h ll_parser.h
 
 all:$(target)
 
@@ -22,10 +23,11 @@ obj/scanner.o:src/scanner.cpp $(addprefix includes/,$(scanner_dep))
 	$(COM_INS)
 obj/production.o:src/production.cpp $(addprefix includes/,$(production_dep))
 	$(COM_INS)
-
+obj/ll_parser.o:src/ll_parser.cpp $(addprefix includes/,$(ll_parser_dep))
+	$(COM_INS)
 $(target):$(OBJ)
 	@$(cc) -g $^ -o $(target) -lpthread
-	@echo "\033[33m 生成完毕\033[0m"
+	@echo "\033[33m generated success!\033[0m"
 
 .PHONY clean:
 clean:

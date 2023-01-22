@@ -36,6 +36,17 @@ namespace HParser
             std::string str = tok.val.substr(1, tok.val.size() - 2);
             return find_sym(str, is_ter);
         }
+        bool nullable(Symbol *sym)
+        {
+            return null_tab.count(sym);
+        }
+        std::string get_name(Symbol *sym)
+        {
+            auto it = rsymb_tab.find(sym);
+            if (it == rsymb_tab.end())
+                throw std::runtime_error("Context::get_name(string): unknonwn symbol ");
+            return it->second;
+        }
         void print();
 
         void calc_nullable();
@@ -52,7 +63,7 @@ namespace HParser
         std::vector<Production> prods;
         std::map<std::string, Symbol *> symb_tab;
         std::map<Symbol *, std::string> rsymb_tab;
-        std::set<Symbol *> nullable;
+        std::set<Symbol *> null_tab;
     };
 
     class Symbol
@@ -92,6 +103,7 @@ namespace HParser
             std::map<std::string, std::vector<std::string>> answer_res;
             auto scanner = HLex::scanner(input);
             HParser::Context con(scanner);
+            con.calc_nullable();
             con.calc_first();
 
             for (auto [name, symbol] : con.symb_tab)
