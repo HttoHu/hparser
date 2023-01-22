@@ -117,6 +117,69 @@ namespace HParser
         }
     }
     // fixed point algorithm.
+
+    void Context::calc_first()
+    {
+        std::list<std::pair<Symbol *, Production *>> L;
+
+        std::map<Symbol *, int> symb_cnt_tab;
+
+        for (int i = 0; i < prods.size(); i++)
+        {
+            L.push_back({prods_left[i], &prods[i]});
+            symb_cnt_tab[prods_left[i]]++;
+        }
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            for (auto it = L.begin(); it != L.end();)
+            {
+                auto symbol = it->first;
+                auto production = it->second;
+                if (production->expr.size() == 0)
+                {
+                    symb_cnt_tab[symbol]--;
+                    it = L.erase(it);
+                    continue;
+                }
+
+                bool enable_to_delete = true;
+                for (auto item : production->expr)
+                {
+                    if (item->is_terminal())
+                    {
+                        if (!symbol->firsts.count(item))
+                        {
+                            symbol->firsts.insert(item);
+                            changed = true;
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        if (symb_cnt_tab[item])
+                            enable_to_delete = false;
+                        auto tp = symbol->firsts.size();
+                        // First(symbol) |= First(item);
+                        symbol->firsts.insert(item->firsts.begin(), item->firsts.end());
+                        changed |= symbol->firsts.size() != tp;
+                    }
+                    if (!nullable.count(item))
+                        break;
+                }
+                if (enable_to_delete)
+                    it = L.erase(it), symb_cnt_tab[symbol]--;
+                else 
+                    it++;
+            }
+        }
+    }
+    
+    void Context::calc_follow(){
+        
+    }
+    
     void Context::calc_basic_values()
     {
         calc_nullable();
