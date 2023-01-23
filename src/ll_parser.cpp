@@ -1,4 +1,5 @@
 #include "../includes/ll_parser.h"
+#include <algorithm>
 
 namespace HParser
 {
@@ -55,11 +56,103 @@ namespace HParser
         {
             std::cout << context->get_name(sym) << ":";
             for (auto [s, i] : row)
-                std::cout << "{" << s << "," << i << "}";
+            {
+                std::cout << "{" << s << ",";
+                context->print_production(i);
+                std::cout << "}";
+            }
             std::cout << "\n";
         }
     }
-    ASTNodePtr LLParser::parse(const std::vector<HLex::Token> & toks){
+    ASTNodePtr LLParser::parse(const std::vector<HLex::Token> &toks)
+    {
+        struct StacNode
+        {
+            enum Type
+            {
+                SYMBOL,
+                POP
+            } type;
+            StacNode(Type t, Symbol *sym) : type(t), symbol(sym) {}
+            Symbol *symbol;
+            // if the type is pop, then pop such nodes
+            int production_symbol_cnt = 0;
+        };
 
+        int pos = 0;
+        std::vector<StacNode> parsing_stac;
+        std::vector<ASTNodePtr> tree_nodes;
+
+        // init parsing_stac with reverse order. because it is a stack
+        auto start_symbol = context->get_symbol(start);
+        parsing_stac.push_back(StacNode(StacNode::SYMBOL, start_symbol));
+
+        while (parsing_stac.size())
+        {
+
+            auto top_symbol = parsing_stac.back();
+            parsing_stac.pop_back();
+            // std::cout << "Parsing Stac: ";
+            // for (auto item : parsing_stac)
+            // {
+            //     std::cout << context->get_name(item.symbol);
+            //     if (item.type == StacNode::POP)
+            //         std::cout << "(" << item.production_symbol_cnt << ")";
+            //     std::cout << " ";
+            // }
+            // std::cout << "\n";
+            if (top_symbol.type == StacNode::SYMBOL)
+            {
+                if (pos >= toks.size())
+                    throw std::runtime_error("LLParser::parse: unexpected end");
+                auto cur_tok = toks[pos];
+                if (top_symbol.symbol->is_terminal())
+                {
+
+                    if (cur_tok.tag == context->get_name(top_symbol.symbol))
+                    {
+                        tree_nodes.push_back(std::make_unique<ASTNode>(cur_tok.tag, std::string(cur_tok.val), true));
+                        // std::cout << "Cur Nodes stac:";
+                        // for (auto &node : tree_nodes)
+                        // {
+                        //     std::cout << node->type << " ";
+                        // }
+                        // std::cout << "\n";
+                    }
+
+                    else
+                        throw std::runtime_error("syntax error! unexpected token " + cur_tok.to_string());
+                    pos++;
+                }
+                else
+                {
+                    auto it = ll_tab[top_symbol.symbol].find(cur_tok.tag);
+                    if (it == ll_tab[top_symbol.symbol].end())
+                        throw std::runtime_error("syntax error! unexpected token " + cur_tok.to_string());
+                    auto &production = context->prods[it->second].expr;
+                    parsing_stac.push_back(StacNode(StacNode::POP, context->prods_left[it->second]));
+                    parsing_stac.back().production_symbol_cnt = production.size();
+                    for (int i = production.size() - 1; i >= 0; i--)
+                        parsing_stac.push_back(StacNode(StacNode::SYMBOL, production[i]));
+                }
+            }
+            else if (top_symbol.type == StacNode::POP)
+            {
+                std::string node_type = context->get_name(top_symbol.symbol);
+                int cnt = top_symbol.production_symbol_cnt;
+                if (tree_nodes.size() < cnt)
+                    throw std::runtime_error("ASTNodePtr LLParser::parse :internal error!");
+                std::vector<ASTNodePtr> nodes;
+                // get back nodes and merge to a new node
+                while (cnt)
+                    nodes.push_back(std::move(tree_nodes.back())), tree_nodes.pop_back(), cnt--;
+                std::reverse(nodes.begin(), nodes.end());
+                tree_nodes.push_back(std::make_unique<ASTNode>(node_type, std::move(nodes)));
+            }
+        }
+        if (tree_nodes.size() != 1)
+            throw std::runtime_error("LLParser::parse : syntax error!");
+        return std::move(tree_nodes.front());
     }
+
 }

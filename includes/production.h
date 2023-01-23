@@ -1,7 +1,6 @@
 /*
- *   By Htto 2023
- */
-
+*   By Htto 2023
+*/
 #pragma once
 #include <vector>
 #include <map>
@@ -44,11 +43,24 @@ namespace HParser
         {
             auto it = rsymb_tab.find(sym);
             if (it == rsymb_tab.end())
-                throw std::runtime_error("Context::get_name(string): unknonwn symbol ");
+                throw std::runtime_error("Context::get_name(Symbol*): unknonwn symbol ");
+            return it->second;
+        }
+        Symbol *get_symbol(const std::string &str)
+        {
+            auto it = symb_tab.find(str);
+            if (it == symb_tab.end())
+                throw std::runtime_error("Context::get_symbol(string): unknonwn symbol "+str);
             return it->second;
         }
         void print();
-
+        void print_production(int id)
+        {
+            std::cout << get_name(prods_left[id]) << "->";
+            for (auto item : prods[id].expr)
+                std::cout << get_name(item) << " ";
+            std::cout << ";";
+        }
         void calc_nullable();
 
         void calc_first();
@@ -84,7 +96,7 @@ namespace HParser
 
         std::vector<int> prods;
     };
-#define TEST
+
 #ifdef TEST
     const std::string test_file_directory = "./test/production/";
     struct Test
