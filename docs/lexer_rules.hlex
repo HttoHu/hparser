@@ -1,7 +1,13 @@
 [ignore]{
-    space
-}
-
+    space,annotation
+}$
+[user_def,annotation]
+{
+    while(pos<s.size() && s[pos]!='\n')
+        pos++;
+    return "";
+}$
+annotation: #$
 nterminal:\[[A-Za-z0-9]+\]$
 terminal:<[a-z0-9A-Z]+>$
 or :\|$

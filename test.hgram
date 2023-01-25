@@ -1,15 +1,8 @@
 [S]:[E]<end>
     ;
-[E]:[T][E2]
+[Expr]:[Term][AddPlus][ExprRes]
     ;
-[E2]:<plus>[T][E2] 
-    |
-    ;
-[T]:[F][T2]
-    ;
-[T2]:<mul>[F][T2] 
-    |
-    ;
-[F] :<lp>[E]<rp> 
-    | <int>
-    ;
+[ExprRes]:
+[AddPlus]: <plus>
+        |<minus>
+        ;
