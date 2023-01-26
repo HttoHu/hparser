@@ -1,8 +1,10 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <iostream>
 #include <memory>
 #include <variant>
+#include "production.h"
 namespace HParser
 {
     struct ASTNode;
@@ -28,12 +30,13 @@ namespace HParser
                 std::cout << ")";
             }
         }
-
+        Symbol::SymType node_type;
     public:
         std::string type;
-
         bool is_leaf;
 
         data_type data;
     };
+    // to recover original parser tree after kill left common factor and left recursive.
+    void adjust_ast(ASTNodePtr & root);
 };

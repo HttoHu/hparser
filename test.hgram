@@ -1,8 +1,7 @@
-[S]:[E]<end>
+[S]: [E]<end>
     ;
-[Expr]:[Term][AddPlus][ExprRes]
+[E]:[T]<plus>[E]
+    |[T]
     ;
-[ExprRes]:
-[AddPlus]: <plus>
-        |<minus>
-        ;
+[T]:<int>
+    ;

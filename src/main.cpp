@@ -18,9 +18,9 @@ int main()
     auto scanner = HLex::scanner(content);
     std::unique_ptr<Context> context = std::make_unique<Context>(scanner);
 
+    context->kill_left_commmon_factor();
     LLParser parser(std::move(context), "S");
     parser.gen_ll_tab();
-    parser.print_ll_tab();
     std::vector<HLex::Token> vecs;
     vecs.push_back({"int", "123"});
     vecs.push_back({"plus", "+"});
@@ -28,5 +28,9 @@ int main()
     vecs.push_back({"end", "$"});
     auto node = std::move(parser.parse(vecs));
     node->print();
+    std::cout << std::endl;
+    HParser::adjust_ast(node);
+    node->print();
+    std::cout << std::endl;
     return 0;
 }

@@ -1,8 +1,12 @@
 #include "../includes/production.h"
 #include <list>
+#include <queue>
 
 namespace HParser
 {
+    using std::pair;
+    using std::queue;
+    using std::vector;
     namespace
     {
         template <typename T>
@@ -13,6 +17,44 @@ namespace HParser
             s1.insert(s2.begin(), s2.end());
             return s1.size() != old_sz;
         }
+
+        Production calc_common_factors(Context *context, const vector<int> &prod_ids)
+        {
+            auto first_symbol = context->prods[prod_ids.front()].expr.front();
+            Production new_prod;
+            new_prod.expr.push_back(first_symbol);
+            int ans = 1;
+            for (int i = 1;; i++, ans++)
+            {
+                Symbol *expect_sym = nullptr;
+                for (auto prod_id : prod_ids)
+                {
+                    if (context->prods[prod_id].expr.size() <= i)
+                        return new_prod;
+                    auto cur = context->prods[prod_id].expr[i];
+                    if (expect_sym == nullptr)
+                        expect_sym = cur;
+                    else if (expect_sym != cur)
+                        return new_prod;
+                }
+                new_prod.expr.push_back(expect_sym);
+            }
+            return new_prod;
+        }
+    }
+    void Context::push_new_production(Symbol *sym, Production &&prod)
+    {
+        int id = prods.size();
+        sym->prods.push_back(id);
+        prods_left.push_back(sym), prods.push_back(std::move(prod));
+    }
+    void Context::update_production(const std::string &name, Symbol *sym, int id, Production new_prod)
+    {
+        sym->prods.push_back(id);
+        prods_left[id] = sym;
+        prods[id] = new_prod;
+        rsymb_tab[sym] = name;
+        symb_tab[name] = sym;
     }
     Context::Context(HLex::Scanner scanner)
     {
@@ -231,7 +273,7 @@ namespace HParser
                 // if (enable_delete)
                 //     it = L.erase(it);
                 // else
-                    it++;
+                it++;
             }
         }
     }
@@ -241,5 +283,57 @@ namespace HParser
         calc_nullable();
         calc_first();
         calc_follow();
+    }
+
+    void Context::kill_left_commmon_factor()
+    {
+        auto sym_tab_q = queue<pair<std::string, Symbol *>>();
+        for (auto item : symb_tab)
+            if (!item.second->is_terminal())
+                sym_tab_q.push(item);
+
+        while (!sym_tab_q.empty())
+        {
+            auto [name, sym] = sym_tab_q.front();
+            sym_tab_q.pop();
+
+            std::map<Symbol *, std::vector<int>> common_factor_sets;
+            int idx = 0; // gened node idx.
+            for (auto i : sym->prods)
+            {
+                if (prods[i].expr.size() == 0)
+                    common_factor_sets[nullptr].push_back(i);
+                else
+                    common_factor_sets[prods[i].expr.front()].push_back(i);
+            }
+            // no common factors
+            if (common_factor_sets.size() == sym->prods.size())
+                continue;
+            // do kill left common factors
+            // find longest common left factors first
+            sym->prods.clear();
+            for (auto [common_symbol, prod_ids] : common_factor_sets)
+            {
+                int ans = 1;
+                bool need_to_break = false;
+                // left common factor plus a generated Symbol to process different right part
+                Production new_prod = calc_common_factors(this, prod_ids);
+                const int length = new_prod.expr.size();
+
+                Symbol *new_symbol = new Symbol(this, false);
+                std::string new_name = "~" + name + std::to_string(idx++);
+                new_symbol->type = Symbol::LCF;
+
+                for (auto id : prod_ids)
+                {
+                    auto prod = prods[id];
+                    prod.expr.erase(prod.expr.begin(), prod.expr.begin() + length);
+                    update_production(new_name, new_symbol, id, prod);
+                }
+                new_prod.expr.push_back(new_symbol);
+                push_new_production(sym, std::move(new_prod));
+                sym_tab_q.push({new_name, new_symbol});
+            }
+        }
     }
 }

@@ -89,18 +89,8 @@ namespace HParser
 
         while (parsing_stac.size())
         {
-
             auto top_symbol = parsing_stac.back();
             parsing_stac.pop_back();
-            // std::cout << "Parsing Stac: ";
-            // for (auto item : parsing_stac)
-            // {
-            //     std::cout << context->get_name(item.symbol);
-            //     if (item.type == StacNode::POP)
-            //         std::cout << "(" << item.production_symbol_cnt << ")";
-            //     std::cout << " ";
-            // }
-            // std::cout << "\n";
             if (top_symbol.type == StacNode::SYMBOL)
             {
                 if (pos >= toks.size())
@@ -108,18 +98,11 @@ namespace HParser
                 auto cur_tok = toks[pos];
                 if (top_symbol.symbol->is_terminal())
                 {
-
                     if (cur_tok.tag == context->get_name(top_symbol.symbol))
                     {
-                        tree_nodes.push_back(std::make_unique<ASTNode>(cur_tok.tag, std::string(cur_tok.val), true));
-                        // std::cout << "Cur Nodes stac:";
-                        // for (auto &node : tree_nodes)
-                        // {
-                        //     std::cout << node->type << " ";
-                        // }
-                        // std::cout << "\n";
+                        auto node = std::make_unique<ASTNode>(cur_tok.tag, std::string(cur_tok.val), true);
+                        tree_nodes.push_back(std::move(node));
                     }
-
                     else
                         throw std::runtime_error("syntax error! unexpected token " + cur_tok.to_string());
                     pos++;
@@ -147,7 +130,9 @@ namespace HParser
                 while (cnt)
                     nodes.push_back(std::move(tree_nodes.back())), tree_nodes.pop_back(), cnt--;
                 std::reverse(nodes.begin(), nodes.end());
-                tree_nodes.push_back(std::make_unique<ASTNode>(node_type, std::move(nodes)));
+                auto new_node = std::make_unique<ASTNode>(node_type, std::move(nodes));
+                new_node->node_type = top_symbol.symbol->type;
+                tree_nodes.push_back(std::move(new_node));
             }
         }
         if (tree_nodes.size() != 1)

@@ -25,6 +25,8 @@ obj/production.o:src/production.cpp $(addprefix includes/,$(production_dep))
 	$(COM_INS)
 obj/ll_parser.o:src/ll_parser.cpp $(addprefix includes/,$(ll_parser_dep))
 	$(COM_INS)
+obj/ast_node.o:src/ast_node.cpp 
+	$(COM_INS)
 $(target):$(OBJ)
 	@$(cc) -g $^ -o $(target) -lpthread
 	@echo "\033[33m generated success!\033[0m"
