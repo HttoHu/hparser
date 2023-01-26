@@ -7,6 +7,7 @@
 #include "production.h"
 namespace HParser
 {
+    const int PRINT_INDENT = 2;
     struct ASTNode;
     using ASTNodePtr = std::unique_ptr<ASTNode>;
     struct ASTNode
@@ -15,22 +16,21 @@ namespace HParser
         using data_type = std::variant<std::monostate, std::string, std::vector<ASTNodePtr>>;
 
         ASTNode(const std::string &_t, data_type &&_data, bool _is_leaf = false) : type(_t), data(std::move(_data)), is_leaf(_is_leaf) {}
-        void print()
+        void print(int dep = 0)
         {
+            for (int i = 0; i < dep; i++)
+                std::cout << "|" << std::string(PRINT_INDENT - 1, ' ');
             if (is_leaf)
-                std::cout << std::get<std::string>(data);
+                std::cout << std::get<std::string>(data) << std::endl;
             else
             {
-                std::cout << "(" << type<<" ";
+                std::cout  << type << "\n";
                 for (auto &item : std::get<std::vector<ASTNodePtr>>(data))
-                {
-                    item->print();
-                    std::cout<<" ";
-                }
-                std::cout << ")";
+                    item->print(dep + 1);
             }
         }
         Symbol::SymType node_type;
+
     public:
         std::string type;
         bool is_leaf;
@@ -38,5 +38,5 @@ namespace HParser
         data_type data;
     };
     // to recover original parser tree after kill left common factor and left recursive.
-    void adjust_ast(ASTNodePtr & root);
+    void adjust_ast(ASTNodePtr &root);
 };

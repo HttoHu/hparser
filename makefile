@@ -11,13 +11,14 @@ define COM_INS
 endef
 
 # Dependencies
+main_dep = ast_node.h
 scanner_dep = scanner.h
 production_dep = scanner.h production.h
 ll_parser_dep = production.h ast_node.h ll_parser.h
 
 all:$(target)
 
-obj/main.o:$(addprefix ./src/, main.cpp)
+obj/main.o:$(addprefix ./src/, main.cpp) $(addprefix includes/,$(main_dep))
 	$(COM_INS)
 obj/scanner.o:src/scanner.cpp $(addprefix includes/,$(scanner_dep))
 	$(COM_INS)
