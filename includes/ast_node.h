@@ -24,12 +24,33 @@ namespace HParser
                 std::cout << std::get<std::string>(data) << std::endl;
             else
             {
-                std::cout  << type << "\n";
+                std::cout << type << "\n";
                 for (auto &item : std::get<std::vector<ASTNodePtr>>(data))
                     item->print(dep + 1);
             }
         }
-        Symbol::SymType node_type;
+        // chilren count
+        size_t ch_size() const
+        {
+            return std::get<std::vector<ASTNodePtr>>(data).size();
+        }
+        ASTNodePtr &operator[](size_t idx)
+        {
+            return std::get<std::vector<ASTNodePtr>>(data)[idx];
+        }
+        ASTNodePtr &back()
+        {
+            return operator[](ch_size() - 1);
+        }
+        ASTNodePtr &front()
+        {
+            return operator[](0);
+        }
+        std::vector<ASTNodePtr> &children()
+        {
+            std::get<std::vector<ASTNodePtr>>(data);
+        }
+        Symbol::SymType node_type = Symbol::COMMON;
 
     public:
         std::string type;

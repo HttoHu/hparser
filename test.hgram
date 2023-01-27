@@ -1,7 +1,10 @@
 [S]: [E]<end>
     ;
-[E]:[T]<plus>[E]
+[E]:[E]<plus>[T]
     |[T]
     ;
-[T]:<int>
+[T]:[T]<mul>[F]
+    |[F]
+    ;
+[F]: <int>
     ;

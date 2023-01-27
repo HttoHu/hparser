@@ -30,7 +30,11 @@ namespace HParser
     public:
         void push_new_production(Symbol *sym, Production &&prod);
         void update_production(const std::string &name, Symbol *sym, int id, Production new_prod);
-
+        void register_symbol(Symbol *sym, const std::string &name)
+        {
+            symb_tab.insert({name, sym});
+            rsymb_tab.insert({sym, name});
+        }
         // if it doesn't exist, then create a new one.
         Symbol *find_sym(const std::string &str, bool is_terminal);
         Symbol *find_sym(HLex::Token tok)
@@ -58,6 +62,7 @@ namespace HParser
             return it->second;
         }
         void print();
+
         void print_production(int id)
         {
             std::cout << get_name(prods_left[id]) << "->";
@@ -65,6 +70,7 @@ namespace HParser
                 std::cout << get_name(item) << " ";
             std::cout << ";";
         }
+        
         void calc_nullable();
 
         void calc_first();
@@ -96,7 +102,16 @@ namespace HParser
         bool nullable() const;
         bool is_terminal() const { return is_ter; }
         void push_production(int id) { prods.push_back(id); }
-
+        bool left_recursive() const
+        {
+            for (auto id : prods)
+            {
+                auto &prod = context->prods[id];
+                if (prod.expr.size() && prod.expr.front() == this)
+                    return true;
+            }
+            return false;
+        }
         std::set<Symbol *> follows;
         std::set<Symbol *> firsts;
         std::vector<int> prods;

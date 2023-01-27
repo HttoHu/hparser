@@ -101,6 +101,7 @@ namespace HParser
                     if (cur_tok.tag == context->get_name(top_symbol.symbol))
                     {
                         auto node = std::make_unique<ASTNode>(cur_tok.tag, std::string(cur_tok.val), true);
+                        node->node_type = Symbol::COMMON;
                         tree_nodes.push_back(std::move(node));
                     }
                     else
@@ -115,7 +116,7 @@ namespace HParser
                     auto &production = context->prods[it->second].expr;
                     parsing_stac.push_back(StacNode(StacNode::POP, context->prods_left[it->second]));
                     parsing_stac.back().production_symbol_cnt = production.size();
-                    for (int i = production.size() - 1; i >= 0; i--)
+                    for (int i = (int)production.size() - 1; i >= 0; i--)
                         parsing_stac.push_back(StacNode(StacNode::SYMBOL, production[i]));
                 }
             }

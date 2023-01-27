@@ -18,13 +18,16 @@ int main()
     auto scanner = HLex::scanner(content);
     std::unique_ptr<Context> context = std::make_unique<Context>(scanner);
 
-    context->kill_left_commmon_factor();
+    // context->kill_left_commmon_factor();
+    context->kill_left_recursive();
     LLParser parser(std::move(context), "S");
     parser.gen_ll_tab();
     std::vector<HLex::Token> vecs;
     vecs.push_back({"int", "123"});
     vecs.push_back({"plus", "+"});
     vecs.push_back({"int", "234"});
+    vecs.push_back({"mul", "*"});
+    vecs.push_back({"int", "345"});
     vecs.push_back({"end", "$"});
     auto node = std::move(parser.parse(vecs));
     node->print();

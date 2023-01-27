@@ -7,6 +7,7 @@ namespace HParser
     using std::pair;
     using std::queue;
     using std::vector;
+    
     namespace
     {
         template <typename T>
@@ -42,12 +43,14 @@ namespace HParser
             return new_prod;
         }
     }
+    
     void Context::push_new_production(Symbol *sym, Production &&prod)
     {
         int id = prods.size();
         sym->prods.push_back(id);
         prods_left.push_back(sym), prods.push_back(std::move(prod));
     }
+    
     void Context::update_production(const std::string &name, Symbol *sym, int id, Production new_prod)
     {
         sym->prods.push_back(id);
@@ -56,6 +59,7 @@ namespace HParser
         rsymb_tab[sym] = name;
         symb_tab[name] = sym;
     }
+    
     Context::Context(HLex::Scanner scanner)
     {
         while (!scanner.is_end())
@@ -91,6 +95,7 @@ namespace HParser
             scanner.skip();
         }
     }
+    
     Context::~Context()
     {
         for (auto [s, item] : symb_tab)
@@ -111,11 +116,12 @@ namespace HParser
             throw std::runtime_error("find_sym(): terminal nterminal shared same name!");
         return it->second;
     }
+    
     void Context::print()
     {
         for (int i = 0; i < prods.size(); i++)
         {
-            std::cout << rsymb_tab[prods_left[i]] << ":";
+            std::cout << rsymb_tab[prods_left[i]] << " : ";
             for (auto item : prods[i].expr)
             {
                 std::cout << rsymb_tab[item] << " ";
@@ -334,6 +340,49 @@ namespace HParser
                 push_new_production(sym, std::move(new_prod));
                 sym_tab_q.push({new_name, new_symbol});
             }
+        }
+    }
+
+    void Context::kill_left_recursive()
+    {
+        for (auto [name, sym] : symb_tab)
+        {
+            auto &prod_ids = sym->prods;
+            // check if the symbol has left recursive productions.
+            bool have_left_recursive = sym->left_recursive();
+            if (!have_left_recursive)
+                continue;
+            // A-> A\alpha | \beta
+            std::vector<int> alpha_set, beta_set;
+            for (auto i : prod_ids)
+            {
+                if (prods[i].expr.size() && prods[i].expr.front() == sym)
+                    alpha_set.push_back(i);
+                else
+                    beta_set.push_back(i);
+            }
+            Symbol *new_sym = new Symbol(this, false);
+            new_sym->type = Symbol::LR;
+
+            // do kill direct left recursive convert.
+            sym->prods.clear();
+            for (auto beta : beta_set)
+            {
+                auto &vcur_prod = prods[beta].expr;
+                vcur_prod.push_back(new_sym);
+                sym->prods.push_back(beta);
+            }
+            for (auto alpha : alpha_set)
+            {
+                auto &vcur_prod = prods[alpha].expr;
+                vcur_prod.erase(vcur_prod.begin());
+                vcur_prod.push_back(new_sym);
+                prods_left[alpha] = new_sym;
+                new_sym->prods.push_back(alpha);
+            }
+            register_symbol(new_sym, name + "'");
+            // push epsilon
+            push_new_production(new_sym, Production());
         }
     }
 }

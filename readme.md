@@ -15,7 +15,7 @@ LL(1) Parser:
    
    * If the top of the parsing stack is terminal, read a token and check if they are same type and pop it (if they are different the throw an error).
    
-4. Some production change
+4. Some production ajustments algorithm
    * Because LL(1) parsing cannot process some productions such as left recursive productions, left common factors productions. We need to transform them as the equivalent productions at first.
    
    * Kill left common factors is very simple and intuitive, for example
