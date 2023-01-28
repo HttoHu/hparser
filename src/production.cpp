@@ -7,7 +7,7 @@ namespace HParser
     using std::pair;
     using std::queue;
     using std::vector;
-    
+
     namespace
     {
         template <typename T>
@@ -43,14 +43,14 @@ namespace HParser
             return new_prod;
         }
     }
-    
+
     void Context::push_new_production(Symbol *sym, Production &&prod)
     {
         int id = prods.size();
         sym->prods.push_back(id);
         prods_left.push_back(sym), prods.push_back(std::move(prod));
     }
-    
+
     void Context::update_production(const std::string &name, Symbol *sym, int id, Production new_prod)
     {
         sym->prods.push_back(id);
@@ -59,7 +59,7 @@ namespace HParser
         rsymb_tab[sym] = name;
         symb_tab[name] = sym;
     }
-    
+
     Context::Context(HLex::Scanner scanner)
     {
         while (!scanner.is_end())
@@ -95,7 +95,7 @@ namespace HParser
             scanner.skip();
         }
     }
-    
+
     Context::~Context()
     {
         for (auto [s, item] : symb_tab)
@@ -116,7 +116,7 @@ namespace HParser
             throw std::runtime_error("find_sym(): terminal nterminal shared same name!");
         return it->second;
     }
-    
+
     void Context::print()
     {
         for (int i = 0; i < prods.size(); i++)
@@ -385,4 +385,5 @@ namespace HParser
             push_new_production(new_sym, Production());
         }
     }
+
 }

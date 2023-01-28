@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include "../includes/scanner.h"
 #include "../includes/production.h"
 #include "../includes/ll_parser.h"
@@ -22,18 +24,21 @@ int main()
     context->kill_left_recursive();
     LLParser parser(std::move(context), "S");
     parser.gen_ll_tab();
-    std::vector<HLex::Token> vecs;
-    vecs.push_back({"int", "123"});
-    vecs.push_back({"plus", "+"});
-    vecs.push_back({"int", "234"});
-    vecs.push_back({"mul", "*"});
-    vecs.push_back({"int", "345"});
-    vecs.push_back({"end", "$"});
-    auto node = std::move(parser.parse(vecs));
-    node->print();
-    std::cout << std::endl;
-    HParser::adjust_ast(node);
-    node->print();
-    std::cout << std::endl;
+
+    std::ofstream ofs("./output/tmp.cpp");
+    std::string template_str = read_file("./template/template.cpp");
+    ofs << parser.gen_parser_code(template_str) << "\n";
+    ofs.close();
+    // std::vector<HLex::Token> vecs;
+    // vecs.push_back({"int", "123"});
+    // vecs.push_back({"plus", "+"});
+    // vecs.push_back({"int", "234"});
+    // vecs.push_back({"mul", "*"});
+    // vecs.push_back({"int", "345"});
+    // vecs.push_back({"end", "$"});
+    // auto node = std::move(parser.parse(vecs));
+    // std::cout << std::endl;
+    // HParser::adjust_ast(node);
+    // std::cout << node->
     return 0;
 }

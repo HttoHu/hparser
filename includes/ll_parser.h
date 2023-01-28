@@ -13,11 +13,17 @@ namespace HParser
     struct LLParser
     {
         LLParser(std::unique_ptr<Context> &&_context, const std::string &_start) : start(_start), context(std::move(_context)) {}
+
+    public:
         void gen_ll_tab();
+
+        void print_ll_tab();
 
         ASTNodePtr parse(const std::vector<HLex::Token> &toks);
 
-        void print_ll_tab();
+        std::string gen_parser_code(const std::string &temp);
+
+    public:
         std::string start;
         std::unique_ptr<Context> context;
         std::map<Symbol *, std::map<std::string, int>> ll_tab;

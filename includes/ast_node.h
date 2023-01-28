@@ -48,7 +48,7 @@ namespace HParser
         }
         std::vector<ASTNodePtr> &children()
         {
-            std::get<std::vector<ASTNodePtr>>(data);
+            return std::get<std::vector<ASTNodePtr>>(data);
         }
         Symbol::SymType node_type = Symbol::COMMON;
 

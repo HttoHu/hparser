@@ -1,8 +1,178 @@
 #include "../includes/ll_parser.h"
 #include <algorithm>
+#include <functional>
 
 namespace HParser
 {
+    using std::string;
+    using std::to_string;
+    // code gen utility functions.
+    namespace
+    {
+        std::string gen_header()
+        {
+            return R"(
+namespace HParser
+{
+    LLParser::LLParser()
+    {
+            )";
+        }
+        template <typename T>
+        std::string conv_to_liter(T t)
+        {
+            return std::to_string(t);
+        }
+        template <>
+        std::string conv_to_liter(std::string str)
+        {
+            std::map<char, std::string> escape = {
+                {'\n', "\\n"}, {'\t', "\\t"}, {'\r', "\\r"}, {'\\', "\\\\"}, {'\'', "\\'"}};
+
+            std::string ret = "\"";
+            for (int i = 0; i < str.size(); i++)
+            {
+                if (escape.count(str[i]))
+                    ret += escape[str[i]];
+                else
+                    ret += str[i];
+            }
+            ret += '\"';
+            return ret;
+        }
+        template <>
+        std::string conv_to_liter(char ch)
+        {
+            if (ch == 0)
+                return "0";
+            std::map<char, std::string> escape = {
+                {'\n', "\\n"}, {'\t', "\\t"}, {'\r', "\\r"}, {'\\', "\\\\"}, {'\'', "\\'"}};
+            if (escape.count(ch))
+                return '\'' + escape[ch] + '\'';
+            return '\'' + std::string(1, ch) + '\'';
+        }
+        template <typename K, typename V>
+        std::string gen_tab(const std::map<K, V> &mp)
+        {
+            if (mp.empty())
+                return "{}";
+            std::string ret = "{";
+            int cnt = 0;
+            for (auto [k, v] : mp)
+            {
+                ret += "{" + conv_to_liter(k) + "," + conv_to_liter(v) + "},";
+            }
+            ret.back() = '}';
+            return ret;
+        }
+        template <typename K, typename V>
+        std::string gen_tab2(const std::map<K, V> &mp, std::function<std::string(V)> f)
+        {
+            if (mp.empty())
+                return "{}";
+            std::string ret = "{";
+            for (auto [k, v] : mp)
+            {
+                ret += "{" + conv_to_liter(k) + "," + f(v) + "},";
+            }
+            ret.back() = '}';
+            return ret;
+        }
+        template <typename V>
+        std::string gen_set(const std::set<V> &s)
+        {
+            if (s.empty())
+                return "{}";
+            std::string ret = "{";
+            for (auto v : s)
+                ret += conv_to_liter(v) + ",";
+            ret.back() = '}';
+            return ret;
+        }
+        template <typename V>
+        std::string gen_set(const std::set<V> &s, std::function<std::string(V)> f)
+        {
+            if (s.empty())
+                return "{}";
+            std::string ret = "{";
+            for (auto v : s)
+                ret += f(v) + ",";
+            ret.back() = '}';
+            return ret;
+        }
+        template <typename V>
+        std::string gen_vec(const std::vector<V> &s, std::function<std::string(V)> f)
+        {
+            if (s.empty())
+                return "{}";
+
+            std::string ret = "{";
+            for (auto v : s)
+                ret += f(v) + ",";
+            ret.back() = '}';
+            return ret;
+        }
+
+        std::string gen_func(const std::string &func)
+        {
+            std::string ret = "[](const std::string &s,int &pos)" + func;
+            return ret;
+        }
+
+        std::string _gen_symbol_pointer_code(Symbol *sym, const std::string &name, const std::string &v_name, std::map<Symbol *, int> &tab)
+        {
+            std::string ret;
+            ret += name + "->type =(Symbol::SymType)" + std::to_string(sym->type) + ";\n";
+            ret += name + "->is_ter = " + to_string(sym->is_terminal()) + ";\n";
+            return ret;
+        }
+        std::string _gen_symbol_vec(const std::vector<Symbol *> &sym_vec, std::map<Symbol *, int> &tab)
+        {
+            string res = "std::vector<Symbol *> v(" + to_string(sym_vec.size()) + ");\n";
+            res += R"(
+        for(int i=0;i<v.size();i++){
+            v[i] = new Symbol();
+        }    
+        )";
+            for (int i = 0; i < sym_vec.size(); i++)
+            {
+                res += _gen_symbol_pointer_code(sym_vec[i], "v[" + to_string(i) + "]", "v", tab);
+            }
+            return res;
+        }
+        std::string _gen_context(Context *context, std::map<Symbol *, int> &tab)
+        {
+            auto sym_convertor = [&](Symbol *s)
+            { return "v[" + to_string(tab[s]) + "]"; };
+            string res = "context= std::make_unique<Context>();\n";
+            res += "context->prods_left = " + gen_vec<Symbol *>(context->prods_left, sym_convertor) +
+                   ";\n";
+            res += "context->prods.resize(" + to_string(context->prods.size()) + ");\n";
+            for (int i = 0; i < context->prods.size(); i++)
+            {
+                if (context->prods[i].expr.size())
+                {
+                    res += "context->prods[" + to_string(i) + "].expr = " + gen_vec<Symbol *>(context->prods[i].expr, sym_convertor) + ";\n";
+                }
+            }
+            res += "context->symb_tab = " + gen_tab2<string, Symbol *>(context->symb_tab, sym_convertor) + ";\n";
+            res += R"(
+                for(auto [k,v]:context->symb_tab)
+                    context->rsymb_tab.insert({v,k});
+            )";
+            return res;
+        }
+        std::string _gen_parser(const LLParser &parser, std::map<Symbol *, int> &tab)
+        {
+            string res = "start = " + conv_to_liter(parser.start) + ";\n";
+            for (auto &item : parser.ll_tab)
+            {
+                res += "ll_tab[v[" + to_string(tab[item.first]) + "]]=" + gen_tab<string, int>(item.second) + ";\n";
+            }
+            return res;
+        }
+    }
+
     void LLParser::gen_ll_tab()
     {
         context->calc_basic_values();
@@ -141,4 +311,24 @@ namespace HParser
         return std::move(tree_nodes.front());
     }
 
+    // generate code.
+    std::string LLParser::gen_parser_code(const std::string &temp)
+    {
+        // build context first
+        std::string res = temp + "\n" + gen_header();
+        // give every symbol a number
+        std::map<Symbol *, int> sym_tab;
+        std::vector<Symbol *> sym_vec;
+        int cnt = 0;
+        for (auto [name, sym] : context->symb_tab)
+        {
+            sym_tab.insert({sym, cnt++});
+            sym_vec.push_back(sym);
+        }
+        res += _gen_symbol_vec(sym_vec, sym_tab);
+        res += _gen_context(context.get(), sym_tab);
+        res += _gen_parser(*this, sym_tab);
+        res += "}\n}";
+        return res;
+    }
 }

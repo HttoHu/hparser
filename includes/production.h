@@ -112,6 +112,7 @@ namespace HParser
             }
             return false;
         }
+        // @name:varname, @v_name: the name of vector<Symbol*>,@tab: a map
         std::set<Symbol *> follows;
         std::set<Symbol *> firsts;
         std::vector<int> prods;
