@@ -315,7 +315,12 @@ namespace HParser
     std::string LLParser::gen_parser_code(const std::string &temp)
     {
         // build context first
-        std::string res = temp + "\n" + gen_header();
+        std::string res = temp;
+        std::string tail;
+        while (res.back() != '$')
+            tail += res.back(), res.pop_back();
+        res.pop_back();
+        res += "{\n";
         // give every symbol a number
         std::map<Symbol *, int> sym_tab;
         std::vector<Symbol *> sym_vec;
@@ -328,7 +333,8 @@ namespace HParser
         res += _gen_symbol_vec(sym_vec, sym_tab);
         res += _gen_context(context.get(), sym_tab);
         res += _gen_parser(*this, sym_tab);
-        res += "}\n}";
-        return res;
+        res += "}\n";
+        std::reverse(tail.begin(),tail.end());
+        return res+tail;
     }
 }

@@ -1,0 +1,18 @@
+[S]:[E]<end>
+    ;
+[E]:[E]<add>[T]
+    |[E]<sub>[T]
+    |[T]
+    ;
+[T]:[T]<mul>[F]
+    |[T]<div>[F]
+    |[F]
+    ;
+[F]:<num>
+    |<lp>[E]<rp>
+    |[Func]
+    ;
+[Func]:<sin><lp>[E]<rp>
+    |<cos><lp>[E]<rp>
+    |<tan><lp>[E]<rp>
+    ;

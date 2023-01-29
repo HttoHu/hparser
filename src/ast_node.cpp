@@ -17,7 +17,7 @@ namespace HParser
     void adjust_ast(ASTNodePtr &node)
     {
         using children_type = std::vector<ASTNodePtr>;
-        if (node->is_leaf)
+        if (node->is_leaf || node->children().size() == 0)
             return;
 
         children_type new_vec;
@@ -33,7 +33,7 @@ namespace HParser
             }
             else
             {
-                // cur_node is an obeserver
+                // cur_node is an observer
                 while (cur->ch_size() != 0 && cur->back()->ch_size() != 0)
                     cur = cur->back().get();
                 ASTNodePtr new_node = std::make_unique<ASTNode>(node->type, move_vec(children));
@@ -58,7 +58,7 @@ namespace HParser
             else if (child->node_type == Symbol::LCF)
             {
                 adjust_ast(child);
-                for (auto &gchild : std::get<children_type>(child->data))
+                for (auto &gchild : child->children())
                     new_vec.emplace_back(std::move(gchild));
             }
             else

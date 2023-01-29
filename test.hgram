@@ -1,6 +1,7 @@
 [S]: [E]<end>
     ;
 [E]:[E]<plus>[T]
+    |[E]<minus>[T]
     |[T]
     ;
 [T]:[T]<mul>[F]

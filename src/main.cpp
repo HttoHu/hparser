@@ -1,44 +1,74 @@
 #include <iostream>
 #include <fstream>
-
+#include <filesystem>
+#include <unistd.h>
 #include "../includes/scanner.h"
 #include "../includes/production.h"
 #include "../includes/ll_parser.h"
-// void test()
-// {
-//     if (HParser::Test::test_first("first1"))
-//         std::cout << "Test Okay!\n";
-//     else
-//         std::cout << "Test failed!\n";
-// }
 
-int main()
+char buf[1024];
+const int BUF_LEN = 1024;
+
+std::string cur_dir(char *path)
+{
+    int len = strlen(path);
+    int end_pos = len - 1;
+    while (end_pos && path[end_pos] != '\\' && path[end_pos] != '/')
+        end_pos--;
+    return std::string(path, path + end_pos);
+}
+void gen_code(int argc, char **argv)
 {
     using namespace HParser;
     using namespace HLex;
-    std::string content = HLex::read_file("./test.hgram");
-    auto scanner = HLex::scanner(content);
+    if (argc != 4)
+    {
+        std::cerr << "invalid argument usage: hparser [input][output][start symbol]\n";
+        exit(1);
+    }
+    std::string exe_path = cur_dir(argv[0]);
+    std::string rule_file = HLex::read_file(argv[1]);
+    std::string output_path = argv[2];
+    std::string start_symbol = argv[3];
+
+    auto scanner = HLex::scanner(rule_file);
+
     std::unique_ptr<Context> context = std::make_unique<Context>(scanner);
 
-    // context->kill_left_commmon_factor();
+    context->kill_left_commmon_factor();
     context->kill_left_recursive();
-    LLParser parser(std::move(context), "S");
+
+    LLParser parser(std::move(context), start_symbol);
     parser.gen_ll_tab();
 
-    std::ofstream ofs("./output/tmp.cpp");
-    std::string template_str = read_file("./template/template.cpp");
+    std::ofstream ofs(output_path);
+
+    std::string template_str = read_file(exe_path + "/hparser/template.txt");
     ofs << parser.gen_parser_code(template_str) << "\n";
     ofs.close();
-    // std::vector<HLex::Token> vecs;
-    // vecs.push_back({"int", "123"});
-    // vecs.push_back({"plus", "+"});
-    // vecs.push_back({"int", "234"});
-    // vecs.push_back({"mul", "*"});
-    // vecs.push_back({"int", "345"});
-    // vecs.push_back({"end", "$"});
-    // auto node = std::move(parser.parse(vecs));
-    // std::cout << std::endl;
-    // HParser::adjust_ast(node);
-    // std::cout << node->
+}
+void test()
+{
+    using namespace HParser;
+    using namespace HLex;
+    auto scanner = HLex::scanner(HLex::read_file("./test.hgram"));
+    std::unique_ptr<Context> context = std::make_unique<Context>(scanner);
+
+    context->kill_left_commmon_factor();
+    context->kill_left_recursive();
+    context->print();
+    LLParser parser(std::move(context), "S");
+    parser.gen_ll_tab();
+    std::vector<Token> tokens = {
+        {"int","32"},{"plus","+"},{"int","64"},{"end","$"}
+    };
+    auto node = parser.parse(tokens);
+    adjust_ast(node);
+    node->print();
+}
+int main(int argc, char **argv)
+{
+    // test();
+    gen_code(argc, argv);
     return 0;
 }

@@ -1,5 +1,5 @@
 target = bin/hparser
-cc = g++ -g -std=c++17
+cc = g++ -O2 -std=c++17
 
 SRC= $(wildcard ./src/*.cpp)
 OBJ= $(addprefix obj/,$(patsubst %.cpp,%.o,$(notdir $(SRC))))
@@ -7,7 +7,7 @@ BIN= ./bin/hparser
 
 define COM_INS 
 @echo "\033[31m compiling... $@ \033[0m"
-@$(cc) -g -c $< -o $@
+@$(cc) -O2 -c $< -o $@
 endef
 
 # Dependencies

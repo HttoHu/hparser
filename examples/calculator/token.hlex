@@ -1,0 +1,17 @@
+# specify
+[keywords]{
+    sin:sin,
+    cos:cos,
+    tan:tan
+}$
+
+[ignore]{space}$
+
+symbol:[a-zA-Z]+$
+num:[0-9]+$
+add:\+$
+sub:\-$
+mul:\*$
+lp:\($
+rp:\)$
+space:\s|\t$
