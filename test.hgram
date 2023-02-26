@@ -1,11 +1,14 @@
-[S]: [E]<end>
+%{
+    line_token : <NEWLINE>
+}
+[S]: [E]<END>
     ;
-[E]:[E]<plus>[T]
-    |[E]<minus>[T]
+[E]:[E]<PLUS>[T]
+    |[E]<MINUS>[T]
     |[T]
     ;
-[T]:[T]<mul>[F]
+[T]:[T]<MUL>[F]
     |[F]
     ;
-[F]: <int>
+[F]: <INT>
     ;

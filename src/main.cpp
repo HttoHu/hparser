@@ -43,15 +43,18 @@ void gen_code(int argc, char **argv)
 
     std::ofstream ofs(output_path);
 
-    std::string template_str = read_file(exe_path + "/hparser/template.txt");
+    std::string template_str = read_file(exe_path + "/htemp/hparser.txt");
     ofs << parser.gen_parser_code(template_str) << "\n";
-    ofs.close();
+    ofs.close(); 
 }
 void test()
 {
     using namespace HParser;
     using namespace HLex;
-    auto scanner = HLex::scanner(HLex::read_file("./test.hgram"));
+
+    const std::string temp_file = HLex::read_file("./template/template.txt");
+    const std::string rule_file = HLex::read_file("./test.hgram");
+    auto scanner = HLex::scanner(rule_file);
     std::unique_ptr<Context> context = std::make_unique<Context>(scanner);
 
     context->kill_left_commmon_factor();
@@ -60,15 +63,16 @@ void test()
     LLParser parser(std::move(context), "S");
     parser.gen_ll_tab();
     std::vector<Token> tokens = {
-        {"int","32"},{"plus","+"},{"int","64"},{"end","$"}
-    };
-    auto node = parser.parse(tokens);
-    adjust_ast(node);
-    node->print();
+        {"int", "32"}, {"plus", "+"}, {"int", "64"}, {"end", "$"}};
+    // auto node = parser.parse(tokens);
+    // adjust_ast(node);
+    std::ofstream ofs("./test/parser.h");
+    ofs << parser.gen_parser_code(temp_file);
+    // node->print();
 }
 int main(int argc, char **argv)
 {
-    // test();
-    gen_code(argc, argv);
+    test();
+    // gen_code(argc, argv);
     return 0;
 }

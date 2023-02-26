@@ -82,8 +82,6 @@ namespace HParser
         void kill_left_commmon_factor();
 
         void kill_left_recursive();
-
-    public:
     public:
         std::vector<Symbol *> prods_left;
         std::vector<Production> prods;

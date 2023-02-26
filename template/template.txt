@@ -192,7 +192,26 @@ namespace HParser
     // to recover original parser tree after kill left common factor and left recursive.
     struct LLParser
     {
-        LLParser() $
+        LLParser() {
+            using namespace HLex;
+            std::vector<Symbol *> v($symbol_size);
+            std::vector<std::pair<int,int>> type_vec = $type_vec;
+            for (int i = 0; i < v.size(); i++)
+            {
+                v[i] = new Symbol();
+                v[i]->type = (Symbol::SymType)type_vec[i].first;
+                v[i]->is_ter = type_vec[i].second;
+            }
+            context = std::make_unique<Context>();
+            context->prods_left = $prods_left;
+            context->symb_tab = $sym_tab;
+            context->prods.resize($prods_size);
+            $fill_context_prods
+            for (auto [k, v] : context->symb_tab)
+                context->rsymb_tab.insert({v, k});
+            start = "S";
+            $fill_ll_tab
+        }
 
         ASTNodePtr parse(const std::vector<HLex::Token> &toks)
         {
@@ -228,21 +247,21 @@ namespace HParser
                     auto cur_tok = toks[pos];
                     if (top_symbol.symbol->is_terminal())
                     {
-                        if (cur_tok.tag == context->get_name(top_symbol.symbol))
+                        if (HLex::tag_to_str(cur_tok.tag) == context->get_name(top_symbol.symbol))
                         {
-                            auto node = std::make_unique<ASTNode>(cur_tok.tag, std::string(cur_tok.val), true);
+                            auto node = std::make_unique<ASTNode>(HLex::tag_to_str(cur_tok.tag), std::string(cur_tok.val), true);
                             node->node_type = Symbol::COMMON;
                             tree_nodes.push_back(std::move(node));
                         }
                         else
-                            throw std::runtime_error("syntax error! unexpected token " + cur_tok.to_string());
+                            throw std::runtime_error("syntax error! unexpected token " + cur_tok.val);
                         pos++;
                     }
                     else
                     {
                         auto it = ll_tab[top_symbol.symbol].find(cur_tok.tag);
                         if (it == ll_tab[top_symbol.symbol].end())
-                            throw std::runtime_error("syntax error! unexpected token " + cur_tok.to_string());
+                            throw std::runtime_error("syntax error! unexpected token " + cur_tok.val);
                         auto &production = context->prods[it->second].expr;
                         parsing_stac.push_back(StacNode(StacNode::POP, context->prods_left[it->second]));
                         parsing_stac.back().production_symbol_cnt = production.size();
@@ -274,6 +293,6 @@ namespace HParser
 
         std::string start;
         std::unique_ptr<Context> context;
-        std::map<Symbol *, std::map<std::string, int>> ll_tab;
+        std::map<Symbol *, std::map<HLex::Tag, int>> ll_tab;
     };
 }

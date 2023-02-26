@@ -1,4 +1,5 @@
 #include "../includes/ll_parser.h"
+#include "../includes/utils.h"
 #include <algorithm>
 #include <functional>
 
@@ -9,15 +10,6 @@ namespace HParser
     // code gen utility functions.
     namespace
     {
-        std::string gen_header()
-        {
-            return R"(
-namespace HParser
-{
-    LLParser::LLParser()
-    {
-            )";
-        }
         template <typename T>
         std::string conv_to_liter(T t)
         {
@@ -75,6 +67,17 @@ namespace HParser
             {
                 ret += "{" + conv_to_liter(k) + "," + f(v) + "},";
             }
+            ret.back() = '}';
+            return ret;
+        }
+        template <typename K, typename V>
+        std::string gen_tab3(const std::map<K, V> &mp, std::function<std::string(K, V)> f)
+        {
+            if (mp.empty())
+                return "{}";
+            std::string ret = "{";
+            for (auto [k, v] : mp)
+                ret += f(k, v) + ",";
             ret.back() = '}';
             return ret;
         }
@@ -142,12 +145,9 @@ namespace HParser
         }
         std::string _gen_context(Context *context, std::map<Symbol *, int> &tab)
         {
+            string res;
             auto sym_convertor = [&](Symbol *s)
             { return "v[" + to_string(tab[s]) + "]"; };
-            string res = "context= std::make_unique<Context>();\n";
-            res += "context->prods_left = " + gen_vec<Symbol *>(context->prods_left, sym_convertor) +
-                   ";\n";
-            res += "context->prods.resize(" + to_string(context->prods.size()) + ");\n";
             for (int i = 0; i < context->prods.size(); i++)
             {
                 if (context->prods[i].expr.size())
@@ -155,11 +155,6 @@ namespace HParser
                     res += "context->prods[" + to_string(i) + "].expr = " + gen_vec<Symbol *>(context->prods[i].expr, sym_convertor) + ";\n";
                 }
             }
-            res += "context->symb_tab = " + gen_tab2<string, Symbol *>(context->symb_tab, sym_convertor) + ";\n";
-            res += R"(
-                for(auto [k,v]:context->symb_tab)
-                    context->rsymb_tab.insert({v,k});
-            )";
             return res;
         }
         std::string _gen_parser(const LLParser &parser, std::map<Symbol *, int> &tab)
@@ -167,7 +162,9 @@ namespace HParser
             string res = "start = " + conv_to_liter(parser.start) + ";\n";
             for (auto &item : parser.ll_tab)
             {
-                res += "ll_tab[v[" + to_string(tab[item.first]) + "]]=" + gen_tab<string, int>(item.second) + ";\n";
+                res += "ll_tab[v[" + to_string(tab[item.first]) + "]]=" + gen_tab3<string, int>(item.second, [](auto k, auto v)
+                                                                                                { return "{Tag::" + k + "," + to_string(v) + "}"; }) +
+                       ";\n";
             }
             return res;
         }
@@ -314,13 +311,10 @@ namespace HParser
     // generate code.
     std::string LLParser::gen_parser_code(const std::string &temp)
     {
+        using namespace Utils;
         // build context first
-        std::string res = temp;
-        std::string tail;
-        while (res.back() != '$')
-            tail += res.back(), res.pop_back();
-        res.pop_back();
-        res += "{\n";
+        Slicer slicer(temp);
+
         // give every symbol a number
         std::map<Symbol *, int> sym_tab;
         std::vector<Symbol *> sym_vec;
@@ -330,11 +324,17 @@ namespace HParser
             sym_tab.insert({sym, cnt++});
             sym_vec.push_back(sym);
         }
-        res += _gen_symbol_vec(sym_vec, sym_tab);
-        res += _gen_context(context.get(), sym_tab);
-        res += _gen_parser(*this, sym_tab);
-        res += "}\n";
-        std::reverse(tail.begin(),tail.end());
-        return res+tail;
+        slicer.get_mut("symbol_size") = std::to_string(sym_vec.size());
+        slicer.get_mut("type_vec") = gen_vec<Symbol *>(sym_vec, [](const Symbol *sym)
+                                                       { return "{" + std::to_string(sym->type) + "," + std::to_string(sym->is_terminal()) + "}"; });
+        slicer.get_mut("prods_size") = std::to_string(context->prods.size());
+        auto sym_convertor = [&](Symbol *s)
+        { return "v[" + to_string(sym_tab[s]) + "]"; };
+        slicer.get_mut("prods_left") = gen_vec<Symbol *>(context->prods_left, sym_convertor);
+        slicer.get_mut("sym_tab") = gen_tab2<std::string, Symbol *>(context->symb_tab, sym_convertor);
+
+        slicer.get_mut("fill_context_prods") = _gen_context(context.get(), sym_tab);
+        slicer.get_mut("fill_ll_tab") = _gen_parser(*this, sym_tab);
+        return slicer.merge();
     }
 }

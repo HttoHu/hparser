@@ -1,5 +1,5 @@
 target = bin/hparser
-cc = g++ -O2 -std=c++17
+cc = g++ -g -std=c++17
 
 SRC= $(wildcard ./src/*.cpp)
 OBJ= $(addprefix obj/,$(patsubst %.cpp,%.o,$(notdir $(SRC))))
@@ -27,6 +27,8 @@ obj/production.o:src/production.cpp $(addprefix includes/,$(production_dep))
 obj/ll_parser.o:src/ll_parser.cpp $(addprefix includes/,$(ll_parser_dep))
 	$(COM_INS)
 obj/ast_node.o:src/ast_node.cpp 
+	$(COM_INS)
+obj/utils.o:src/utils.cpp $(addprefix includes/, utils.h)
 	$(COM_INS)
 $(target):$(OBJ)
 	@$(cc) -g $^ -o $(target) -lpthread
